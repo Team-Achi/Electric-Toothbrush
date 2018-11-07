@@ -35,9 +35,7 @@ THE SOFTWARE.
 // for both classes must be in the include path of your project
 #include "I2Cdev.h"
 #include "MPU6050.h"
-#include <SoftwareSerial.h>
- 
-SoftwareSerial BTSerial(2,3);
+
 // Arduino Wire library is required if I2Cdev I2CDEV_ARDUINO_WIRE implementation
 // is used in I2Cdev.h
 #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
@@ -79,77 +77,75 @@ void setup() {
         Fastwire::setup(400, true);
     #endif
 
-    Serial.begin(9600);
-    BTSerial.begin(9600);//블루투스와의 통신속도 설정
+    // initialize serial communication
+    // (38400 chosen because it works as well at 8MHz as it does at 16MHz, but
+    // it's really up to you depending on your project)
+    Serial.begin(38400);
+
+    // initialize device
+    Serial.println("Initializing I2C devices...");
+    accelgyro.initialize();
+
+    // verify connection
+    Serial.println("Testing device connections...");
+    Serial.println(accelgyro.testConnection() ? "MPU6050 connection successful" : "MPU6050 connection failed");
+
+    // use the code below to change accel/gyro offset values
+    /*
+    Serial.println("Updating internal sensor offsets...");
+    // -76	-2359	1688	0	0	0
+    Serial.print(accelgyro.getXAccelOffset()); Serial.print("\t"); // -76
+    Serial.print(accelgyro.getYAccelOffset()); Serial.print("\t"); // -2359
+    Serial.print(accelgyro.getZAccelOffset()); Serial.print("\t"); // 1688
+    Serial.print(accelgyro.getXGyroOffset()); Serial.print("\t"); // 0
+    Serial.print(accelgyro.getYGyroOffset()); Serial.print("\t"); // 0
+    Serial.print(accelgyro.getZGyroOffset()); Serial.print("\t"); // 0
+    Serial.print("\n");
+    accelgyro.setXGyroOffset(220);
+    accelgyro.setYGyroOffset(76);
+    accelgyro.setZGyroOffset(-85);
+    Serial.print(accelgyro.getXAccelOffset()); Serial.print("\t"); // -76
+    Serial.print(accelgyro.getYAccelOffset()); Serial.print("\t"); // -2359
+    Serial.print(accelgyro.getZAccelOffset()); Serial.print("\t"); // 1688
+    Serial.print(accelgyro.getXGyroOffset()); Serial.print("\t"); // 0
+    Serial.print(accelgyro.getYGyroOffset()); Serial.print("\t"); // 0
+    Serial.print(accelgyro.getZGyroOffset()); Serial.print("\t"); // 0
+    Serial.print("\n");
+    */
+
+    // configure Arduino LED for
+    pinMode(LED_PIN, OUTPUT);
 }
 
 void loop() {
     // read raw accel/gyro measurements from device
     accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-    if(az>0x0){
-        BTSerial.write("11\r\n");
-        delay(2000);
-    }
-    else if(az<=0x0){
-      BTSerial.write("41\r\n");
-        delay(2000);
-      }
-      
-    if(az>0x0){
-        BTSerial.write("12\r\n");
-        delay(2000);
-    }
-    else if(az<=0x0){
-      BTSerial.write("42\r\n");
-        delay(2000);
-      }
 
-    if(az>0x0){
-        BTSerial.write("13\r\n");
-        delay(2000);
-    }
-    else if(az<=0x0){
-      BTSerial.write("43\r\n");
-        delay(2000);
-      }
+    // these methods (and a few others) are also available
+    //accelgyro.getAcceleration(&ax, &ay, &az);
+    //accelgyro.getRotation(&gx, &gy, &gz);
 
+    #ifdef OUTPUT_READABLE_ACCELGYRO
+        // display tab-separated accel/gyro x/y/z values
+        Serial.print("a/g:\t");
+        Serial.print(ax); Serial.print("\t");
+        Serial.print(ay); Serial.print("\t");
+        Serial.print(az); Serial.print("\t");
+        Serial.print(gx); Serial.print("\t");
+        Serial.print(gy); Serial.print("\t");
+        Serial.println(gz);
+    #endif
 
-    if(az>0x0){
-        BTSerial.write("14\r\n");
-        delay(2000);
-    }
-    else if(az<=0x0){
-      BTSerial.write("44\r\n");
-        delay(2000);
-      }
+    #ifdef OUTPUT_BINARY_ACCELGYRO
+        Serial.write((uint8_t)(ax >> 8)); Serial.write((uint8_t)(ax & 0xFF));
+        Serial.write((uint8_t)(ay >> 8)); Serial.write((uint8_t)(ay & 0xFF));
+        Serial.write((uint8_t)(az >> 8)); Serial.write((uint8_t)(az & 0xFF));
+        Serial.write((uint8_t)(gx >> 8)); Serial.write((uint8_t)(gx & 0xFF));
+        Serial.write((uint8_t)(gy >> 8)); Serial.write((uint8_t)(gy & 0xFF));
+        Serial.write((uint8_t)(gz >> 8)); Serial.write((uint8_t)(gz & 0xFF));
+    #endif
 
-
-    if(az>0x0){
-        BTSerial.write("15\r\n");
-        delay(2000);
-    }
-    else if(az<=0x0){
-      BTSerial.write("45\r\n");
-        delay(2000);
-      }
-
-    if(az>0x0){
-        BTSerial.write("16\r\n");
-        delay(2000);
-    }
-    else if(az<=0x0){
-      BTSerial.write("46\r\n");
-        delay(2000);
-      }
-
-
-    if(az>0x0){
-        BTSerial.write("17\r\n");
-        delay(2000);
-    }
-    else if(az<=0x0){
-      BTSerial.write("47\r\n");
-        delay(2000);
-      }
-
+    // blink LED to indicate activity
+    blinkState = !blinkState;
+    digitalWrite(LED_PIN, blinkState);
 }
