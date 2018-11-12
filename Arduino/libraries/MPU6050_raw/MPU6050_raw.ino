@@ -53,8 +53,11 @@ MPU6050 accelgyro;
 
 int16_t ax, ay, az;
 int16_t gx, gy, gz;
-
-
+int Fx, Fz;
+int Mx, Mz;
+int Sensitivity = 100;
+int Mapx, Mapz;
+int chogix, chogiz;
 
 // uncomment "OUTPUT_READABLE_ACCELGYRO" if you want to see a tab-separated
 // list of the accel X/Y/Z and then gyro X/Y/Z values in decimal. Easy to read,
@@ -81,11 +84,25 @@ void setup() {
     accelgyro.initialize();
     Serial.begin(9600);
     BTSerial.begin(9600);//블루투스와의 통신속도 설정
+    Mapx = 0; Mapz=0;
+    accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+    chogix = gx;
+    chogiz = gz;
 }
 
 void loop() {
     // read raw accel/gyro measurements from device
     accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+    Fx=(gx - chogix);   //센서 초기값따라 공식 수정.
+  Fz=(gz - chogiz);   //센서 초기값따라 공식 수정.
+  Mx = Fx / Sensitivity; 
+  Mz = Fz / Sensitivity;
+  Headmove(Mx * -1, Mz * -1);
+  Serial.print("x : ");
+  Serial.print(Mapx);
+  Serial.print(", z : ");
+  Serial.println(Mapz);
+/*
     Serial.print(az); Serial.print("\t");
     if(az>0){
         BTSerial.write("11\r\n");
@@ -167,5 +184,10 @@ void loop() {
       BTSerial.write("47\r\n");
         delay(2000);
       }
-
+*/
 }
+
+void Headmove(int x, int z){
+  Mapx = Mapx + x;
+  Mapz = Mapz + z;
+  }
