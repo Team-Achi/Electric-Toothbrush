@@ -64,7 +64,7 @@ void loop() {
   } else {
     analogWrite(6, -1);
   }
-////////////////////////////////////////////////////
+  
   // pressure
   pressureReading = analogRead(pressurePin);  
  
@@ -113,53 +113,5 @@ void loop() {
     }
   }
   delay(1000);
-///////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////
-//  // gyro
-//  toothNum = (toothNum++ % 7) + 1;
-//  // read raw accel/gyro measurements from device
-//  accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-//  
-//  Serial.println(az);
-//  if(az>0x0){
-//      char whole[10] = "1";
-//      char num[10] = {'0'};
-//      itoa(toothNum, &num[0], 10);
-//      strcat(whole, num);
-//      strcat(whole, sep);
-//      BTSerial.write(whole);
-//      Serial.println(whole);
-//  }
-//  else if(az<=0x0){
-//    char whole[10] = "4";
-//    char num[10] = {'0'};
-//    itoa(toothNum, &num[0], 10);
-//    strcat(whole, num);
-//    strcat(whole, sep);
-//    BTSerial.write(whole);
-//    Serial.println(whole);
-// }
-//
-//  // pressure
-//  pressureReading = analogRead(pressurePin);  
-// 
-//  Serial.print("Analog reading = ");
-//  Serial.print(pressureReading);     // the raw analog reading
-// 
-// 
-//  if (pressureReading == 0) {
-//    Serial.println(" - No pressure");
-//  } else if (pressureReading < 10) {
-//    Serial.println(" - Light touch");
-//  } else if (pressureReading < 50) {
-//    Serial.println(" - Light squeeze");
-//  } else if (pressureReading < 150) {
-//    Serial.println(" - Medium squeeze");
-//  } else {
-//    Serial.println(" - Big squeeze");
-//  }
-//  delay(500);
-/////////////////////////////////////////////////////////////////////////////  
 
 }
