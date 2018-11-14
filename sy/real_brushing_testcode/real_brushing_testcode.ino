@@ -2,11 +2,13 @@
 #include <SoftwareSerial.h>
 
 SoftwareSerial BTSerial(2, 3);
-const int MPU = 0x68;               //MPU6050 I2C주소
-int AcX, AcY, AcZ, Tmp, GyX, GyY, GyZ;
 void get6050();
 void writeBT();
 
+const int MPU = 0x68;               //MPU6050 I2C주소
+int AcX, AcY, AcZ, Tmp, GyX, GyY, GyZ;
+
+// number of tooth
 int toothNum = 0;
 
 // pressure
@@ -17,6 +19,13 @@ int pressureReading;     // the analog reading from the pressure resistor divide
 int ledPin = 5;
 int buttonApin = 9;
 
+// brush order 
+int brush[100]    = { 11, 21, 31, 41, 11, 12, 13, 14, 15, 16, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 26, 25, 24, 23, 22, 21, 31, 32, 33, 34, 35, 36, 37, 36, 35, 34, 33, 32, 31, 41, 42, 43, 44, 45, 46, 47, 46, 45, 44, 43, 42, 41 };
+int duration[100] = {  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1 }; 
+int brushCounter = 0;
+
+// Bluetooth write interval
+int interval = 1000;
 
 void setup() {
     pinMode(ledPin, OUTPUT);
@@ -47,18 +56,17 @@ void loop() {
   }
   else {
     Serial.println(" - pressure");
-    // gyro
     toothNum = (toothNum++ % 7) + 1;
-    // read raw accel/gyro measurements from device
-    get6050();
-    if (AcZ > 0x0) {
-      writeBT(toothNum + 10);
-    }
-    else if(AcZ <= 0x0) {
-      writeBT(toothNum + 40);
+
+    if (duration[brushCounter] > 0) {
+      writeBT(brush[brushCounter]);
+      duration[brushCounter]--;
+    } else {
+      brushCounter++;
+      return;
     }
   }
-  delay(1000);
+  delay(interval);
 }
 
 void writeBT(int tooth) {
@@ -73,6 +81,7 @@ void writeBT(int tooth) {
   Serial.println(whole);
 }
 
+// read raw accel/gyro measurements from device
 void get6050(){
   Wire.beginTransmission(MPU);        //MPU6050 호출
   Wire.write(0x3B);//AcX 레지스터 위치 요청
