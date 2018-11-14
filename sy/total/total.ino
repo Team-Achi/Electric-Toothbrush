@@ -28,7 +28,8 @@ int16_t gx, gy, gz;
 
 
 int toothNum = 0;
-char sep[10] = "\r\n";
+
+char sep[10] = ">";
 
 // pressure
 int pressurePin = 0;     // the pressure and 10K pulldown are connected to a0
@@ -72,6 +73,15 @@ void loop() {
 
   if (pressureReading < 10) {
     Serial.println(" - No pressure");
+    char whole[10] = "<";
+    char ten[10] = "0";
+    char num[10] = {'0'};
+    itoa(0, &num[0], 10);
+    strcat(whole, ten);
+    strcat(whole, num);
+    strcat(whole, sep);
+    BTSerial.write(whole);
+    Serial.println(whole);
   }
   else {
     Serial.println(" - pressure");
@@ -79,26 +89,30 @@ void loop() {
     toothNum = (toothNum++ % 7) + 1;
     // read raw accel/gyro measurements from device
     accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-    if(az>0x0){
-      char whole[10] = "1";
+    if (az > 0x0) {
+      char whole[10] = "<";
+      char ten[10] = "1";
       char num[10] = {'0'};
       itoa(toothNum, &num[0], 10);
+      strcat(whole, ten);
       strcat(whole, num);
       strcat(whole, sep);
       BTSerial.write(whole);
       Serial.println(whole);
     }
-    else if(az<=0x0){
-      char whole[10] = "4";
+    else if(az <= 0x0) {
+      char whole[10] = "<";
+      char ten[10] = "4";
       char num[10] = {'0'};
       itoa(toothNum, &num[0], 10);
+      strcat(whole, ten);
       strcat(whole, num);
       strcat(whole, sep);
       BTSerial.write(whole);
       Serial.println(whole);
     }
   }
-  delay(2000);
+  delay(1000);
 ///////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////
