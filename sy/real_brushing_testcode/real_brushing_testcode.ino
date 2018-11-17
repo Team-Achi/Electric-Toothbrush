@@ -3,7 +3,7 @@
 
 SoftwareSerial BTSerial(2, 3);
 void get6050();
-void writeBT();
+void writeBT(int tooth, int checksum, int pressure);
 
 const int MPU = 0x68;               //MPU6050 I2C주소
 int AcX, AcY, AcZ, Tmp, GyX, GyY, GyZ;
@@ -47,6 +47,10 @@ void setup() {
 }
 
 void loop() {
+  int currentTooth = -1;
+  int pressure = -1;
+  int checksum = -1;
+  
   // switch & vibration
   if (digitalRead(buttonApin) == LOW)
   {
@@ -70,6 +74,14 @@ void loop() {
   Serial.print("Analog reading = ");
   Serial.print(pressureReading);     // the raw analog reading
 
+  if (pressureReading < 300)
+    pressure = 1;
+  else if (pressureReading < 700)
+    pressure = 2;
+  else 
+    pressure = 3;
+
+// uncomment to read pressure to send
 //  if (pressureReading < 10) {
 //    Serial.println(" - No pressure");
 //    writeBT(-1);
@@ -79,7 +91,9 @@ void loop() {
     toothNum = (toothNum++ % 7) + 1;
 
     if (duration[brushCounter] > 0) {
-      writeBT(brush[brushCounter]);
+      currentTooth = brush[brushCounter];
+      checksum = currentTooth % 7;
+      writeBT(currentTooth, checksum, 2);     // TODO: send 2(good_pressure) for now
       duration[brushCounter]--;
     } else {
       brushCounter++;
@@ -89,13 +103,22 @@ void loop() {
   delay(interval);
 }
 
-void writeBT(int tooth) {
-  char whole[10] = "";
-  char num[10] = {'0'};
-  char sep[10] = "\r\n";
-  itoa(tooth, &num[0], 10);
-  strcat(whole, num);
+void writeBT(int tooth, int checksum, int pressure) {
+  char whole[20] = "";
+  char str_tooth[20] = {'0'};
+  char str_checksum[20] = {'0'};
+  char str_pressure[20] = {'0'};
+  char sep[20] = "/";
+  char tokenizer[20] = "\r\n";
+  itoa(tooth, &str_tooth[0], 10);
+  strcat(whole, str_tooth);
   strcat(whole, sep);
+  itoa(checksum, &str_tooth[0], 10);
+  strcat(whole, str_tooth); 
+  strcat(whole, sep);
+  itoa(pressure, &str_pressure[0], 10);
+  strcat(whole, str_pressure);
+  strcat(whole, tokenizer);
   
   BTSerial.write(whole);
   Serial.println(whole);
