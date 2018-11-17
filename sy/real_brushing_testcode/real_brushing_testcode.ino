@@ -20,8 +20,11 @@ int ledPin = 5;
 int buttonApin = 9;
 
 // brush order 
-int brush[100]    = { 11, 21, 31, 41, 11, 12, 13, 14, 15, 16, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 26, 25, 24, 23, 22, 21, 31, 32, 33, 34, 35, 36, 37, 36, 35, 34, 33, 32, 31, 41, 42, 43, 44, 45, 46, 47, 46, 45, 44, 43, 42, 41 };
-int duration[100] = {  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1 }; 
+int brush[100]    = { 11, 21, -1, 41, 11, 12, 13, -1, 15, 16, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 26, 25, 24, 23, 22, 21, 31, 32, 33, 34, 35, 36, 37, 36, 35, 34, 33, 32, 31, 41, 42, 43, 44, 45, 46, 47, 46, 45, 44, 43, 42, 41 };
+int duration[100] = {  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7 }; 
+//int duration[100] = {  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1 }; 
+//int duration[100] = {  1,  1,  1,  1, 0 };
+int duration_copy[100] = { 0 };
 int brushCounter = 0;
 int total = 0;
 
@@ -36,7 +39,10 @@ void setup() {
     BTSerial.begin(9600);//블루투스와의 통신속도 설정
 
     for (int i = 0; i < 100; i++) {
-      total += duration[i];
+      if ( duration[i] >  0 ) {
+        total++;
+        duration_copy[i] = duration[i];
+      }
     }
 }
 
@@ -53,17 +59,22 @@ void loop() {
   pressureReading = analogRead(pressurePin);  
 
   // do nothing if end of array 
-  if (brushCounter > total)
+  if (brushCounter > total) {
+    for (int i = 0; i < total; i++) {
+      duration[i] = duration_copy[i];
+    }
+    brushCounter = 0;
     return;
+  }
     
   Serial.print("Analog reading = ");
   Serial.print(pressureReading);     // the raw analog reading
 
-  if (pressureReading < 10) {
-    Serial.println(" - No pressure");
-    writeBT(0);
-  }
-  else {
+//  if (pressureReading < 10) {
+//    Serial.println(" - No pressure");
+//    writeBT(-1);
+//  }
+//  else {
     Serial.println(" - pressure");
     toothNum = (toothNum++ % 7) + 1;
 
@@ -74,14 +85,14 @@ void loop() {
       brushCounter++;
       return;
     }
-  }
+//  }
   delay(interval);
 }
 
 void writeBT(int tooth) {
-  char whole[10] = "<";
+  char whole[10] = "";
   char num[10] = {'0'};
-  char sep[10] = ">";
+  char sep[10] = "\r\n";
   itoa(tooth, &num[0], 10);
   strcat(whole, num);
   strcat(whole, sep);
