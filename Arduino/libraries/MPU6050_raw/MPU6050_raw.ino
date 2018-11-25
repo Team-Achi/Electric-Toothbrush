@@ -69,7 +69,17 @@ int chogix, chogiz;
 // without compression or data loss), and easy to parse, but impossible to read
 // for a human.
 //#define OUTPUT_BINARY_ACCELGYRO
+int16_t velocityx[2] = {0,};
+int16_t accelerationx[2] = {0,};
+int16_t positionx[2] = {0,};
 
+int16_t velocityy[2] = {0,};
+int16_t accelerationy[2] = {0,};
+int16_t positiony[2] = {0,};
+
+int16_t velocityz[2] = {0,};
+int16_t accelerationz[2] = {0,};
+int16_t positionz[2] = {0,};
 
 #define LED_PIN 13
 bool blinkState = false;
@@ -85,23 +95,62 @@ void setup() {
     Serial.begin(9600);
     BTSerial.begin(9600);//블루투스와의 통신속도 설정
     Mapx = 0; Mapz=0;
-    accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-    chogix = gx;
-    chogiz = gz;
+    chogix = 0;
 }
 
 void loop() {
     // read raw accel/gyro measurements from device
     accelgyro.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-    Fx=(gx - chogix);   //센서 초기값따라 공식 수정.
-  Fz=(gz - chogiz);   //센서 초기값따라 공식 수정.
-  Mx = Fx / Sensitivity; 
-  Mz = Fz / Sensitivity;
-  Headmove(Mx * -1, Mz * -1);
-  Serial.print("x : ");
-  Serial.print(Mapx);
-  Serial.print(", z : ");
-  Serial.println(Mapz);
+    if(chogix == 0){
+      chogix = az;
+    }
+//    Fx=(gx - chogix);   //센서 초기값따라 공식 수정.
+//  Fz=(gz - chogiz);   //센서 초기값따라 공식 수정.
+//  Mx = Fx / Sensitivity; 
+//  Mz = Fz / Sensitivity;
+//  Headmove(Mx * -1, Mz * -1);
+//  Serial.print("x : ");
+//  Serial.print(Mapx);
+//  Serial.print(", z : ");
+//  Serial.println(Mapz);
+
+    accelerationx[1] = ax;
+    velocityx[1] = velocityx[0] + accelerationx[1] - accelerationx[0];
+   positionx[1] = positionx[1] + positionx[0] + velocityx[1];
+
+   accelerationy[1] = ay;
+    velocityy[1] = velocityy[1] + accelerationy[1] - accelerationy[0];
+   positionx[1] = positiony[1]+ positiony[0] + velocityy[1];
+
+    accelerationz[1] = az;
+    velocityx[1] = velocityz[0] + accelerationz[1] - accelerationz[0];
+  positionx[1] = positionz[1] + positionz[0] + velocityz[1];
+  float a = (float)ax/16384*10;
+  float b = (float)ay/16384*10;
+  float c = (float)az/16384*10;
+    
+  //  Serial.print(F("position x,y,z : "));
+    Serial.print(a);
+    Serial.print(F(", "));
+    Serial.print(b);
+    Serial.print(F(", "));
+    Serial.print(c);
+    Serial.println(F(""));
+    
+    velocityx[0] = velocityx[1];
+    accelerationx[0] = accelerationx[1];
+    positionx[0] = positionx[1];
+
+    velocityz[0] = velocityz[1];
+    accelerationz[0] = accelerationz[1];
+    positionz[0] = positionz[1];
+
+    velocityy[0] = velocityy[1];
+    accelerationy[0] = accelerationy[1];
+    positiony[0] = positiony[1];
+
+
+    delay(200);
 /*
     Serial.print(az); Serial.print("\t");
     if(az>0){

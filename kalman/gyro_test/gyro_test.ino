@@ -9,34 +9,15 @@
 #define MPU6050_I2C_ADDRESS 0x68
 
 int vibrator_pin = 6;
-int strength = 5;
+int strength = 255;
 int ledPin = 5;
 int buttonApin = 9;
-
+int pry[14][3]
 /* Kalman filter */
 struct GyroKalman{
-	/* These variables represent our state matrix x */
 	float x_angle, x_bias;
-
-	/* Our error covariance matrix */
 	float P_00, P_01, P_10, P_11;
-	
-	/*
-	* Q is a 2x2 matrix of the covariance. Because we
-	* assume the gyro and accelerometer noise to be independent
-	* of each other, the covariances on the / diagonal are 0.
-	* Covariance Q, the process noise, from the assumption
-	* x = F x + B u + w
-	* with w having a normal distribution with covariance Q.
-	* (covariance = E[ (X - E[X])*(X - E[X])' ]
-	* We assume is linear with dt
-	*/
 	float Q_angle, Q_gyro;
-
-	/*
-	* Covariance R, our observation noise (from the accelerometer)
-	* Also assumed to be linear with dt
-	*/
 	float R_angle;
 };
 
@@ -44,30 +25,15 @@ struct GyroKalman angX;
 struct GyroKalman angY;
 struct GyroKalman angZ;
 
-/*
-* R represents the measurement covariance noise. In this case,
-* it is a 1x1 matrix that says that we expect 0.3 rad jitter
-* from the accelerometer.
-*/
 static const float R_angle = 0.3; 		//.3 default
-
-/*
-* Q is a 2x2 matrix that represents the process covariance noise.
-* In this case, it indicates how much we trust the acceleromter
-* relative to the gyros
-*/
 static const float Q_angle = 0.01;	//0.01 (Kalman)
 static const float Q_gyro = 0.04;	//0.04 (Kalman)
-
-//These are the limits of the values I got out of the Nunchuk accelerometers (yours may vary).
 const int lowX = -2150;
 const int highX = 2210;
 const int lowY = -2150;
 const int highY = 2210;
 const int lowZ = -2150;
 const int highZ = 2550;
-
-
 /* time */
 unsigned long prevSensoredTime = 0;
 unsigned long curSensoredTime = 0;
@@ -116,14 +82,16 @@ int zCal = 1800;
 int gx1_raw = 0;
 int gy1_raw = 0;
 int gz1_raw = 0;
-
+int count = 0;
 void setup()
 {
 	int error;
 	uint8_t c;
-  //pinMode( vibrator_pin , OUTPUT);
-  //pinMode(ledPin, OUTPUT);
-  //pinMode(buttonApin, INPUT_PULLUP); 
+  pinMode( vibrator_pin , OUTPUT);
+///  pinMode(ledPin, OUTPUT);
+//  pinMode(buttonApin, INPUT_PULLUP); 
+  analogWrite( vibrator_pin , strength );
+  delay(100);
 	initGyroKalman(&angX, Q_angle, Q_gyro, R_angle);
 	initGyroKalman(&angY, Q_angle, Q_gyro, R_angle);
 	initGyroKalman(&angZ, Q_angle, Q_gyro, R_angle);
@@ -131,31 +99,18 @@ void setup()
 	Serial.begin(9600);
 	Wire.begin();
 
-	// default at power-up:
-	// Gyro at 250 degrees second
-	// Acceleration at 2g
-	// Clock source at internal 8MHz
-	// The device is in sleep mode.
-	//
 	error = MPU6050_read (MPU6050_WHO_AM_I, &c, 1);
 	Serial.print(F("WHO_AM_I : "));
 	Serial.print(c,HEX);
 	Serial.print(F(", error = "));
 	Serial.println(error,DEC);
 
-	// According to the datasheet, the 'sleep' bit
-	// should read a '1'. But I read a '0'.
-	// That bit has to be cleared, since the sensor
-	// is in sleep mode at power-up. Even if the
-	// bit reads '0'.
 	error = MPU6050_read (MPU6050_PWR_MGMT_2, &c, 1);
 	Serial.print(F("PWR_MGMT_2 : "));
 	Serial.print(c,HEX);
 	Serial.print(F(", error = "));
 	Serial.println(error,DEC);
-
-	// Clear the 'sleep' bit to start the sensor.
-	MPU6050_write_reg (MPU6050_PWR_MGMT_1, 0);
+  pinMode(buttonApin, INPUT_PULLUP);
 }
 
 
@@ -241,17 +196,128 @@ void loop()
 
 		}
 
-    gx1_raw = map(gx1, -16383, 16383, -100, 100);
-    gy1_raw = map(gy1, -16383, 16383, -100, 100);
-    gz1_raw = map(gz1, -16383, 16383, -100, 100);
-    
-		Serial.print(F("Angle x,y,z : "));
-		Serial.print(gx1_raw, DEC);
-		Serial.print(F(", "));
-		Serial.print(gy1_raw, DEC);
-		Serial.print(F(", "));
-		Serial.print(gz1_raw, DEC);
-		Serial.println(F(""));
+    gx1_raw = map(gx1, -16383, 16383, -500, 500);
+    gy1_raw = map(gy1, -16383, 16383, -500, 500);
+    gz1_raw = map(gz1, -16383, 16383, -500, 500);
+ /*   if(gx1_raw>= 10 && gy1_raw<=10){
+      Serial.print(F("47\n"));
+      }
+      else if(gx1_raw>= -10 && gy1_raw<=10){
+      Serial.print(F("46\n"));
+      }
+      else if(gy1_raw<=10){
+      Serial.print(F("45\n"));
+      }
+      else{
+        Serial.print(F("X\n"));
+      }*/
+
+      if(count<14){
+        if(digitalRead(buttonApin) == LOW){
+          if(count ==0){
+            pry[0][0] = gx1_raw;
+            pry[0][1] = gy1_raw;
+            pry[0][2] = gz1_raw;
+            delay(500);
+          }
+          else if(count == 1){
+            pry[1][0] = gx1_raw;
+            pry[1][1] = gy1_raw;
+            pry[1][2] = gz1_raw;
+            delay(500);
+          }
+          else if(count == 2){
+            pry[2][0] = gx1_raw;
+            pry[2][1] = gy1_raw;
+            pry[2][2] = gz1_raw;
+            delay(500);
+          }
+          else if(count == 3){
+            pry[3][0] = gx1_raw;
+            pry[3][1] = gy1_raw;
+            pry[3][2] = gz1_raw;
+            delay(500);
+          }
+          else if(count == 4){
+            pry[4][0] = gx1_raw;
+            pry[4][1] = gy1_raw;
+            pry[4][2] = gz1_raw;
+            delay(500);
+          }
+          else if(count == 5){
+            pry[5][0] = gx1_raw;
+            pry[5][1] = gy1_raw;
+            pry[5][2] = gz1_raw;
+            delay(500);
+          }
+          else if(count == 6){
+            pry[6][0] = gx1_raw;
+            pry[6][1] = gy1_raw;
+            pry[6][2] = gz1_raw;
+            delay(500);
+          }
+          else if(count == 7){
+            pry[7][0] = gx1_raw;
+            pry[7][1] = gy1_raw;
+            pry[7][2] = gz1_raw;
+            delay(500);
+          }
+          else if(count == 8){
+            pry[8][0] = gx1_raw;
+            pry[8][1] = gy1_raw;
+            pry[8][2] = gz1_raw;
+            delay(500);
+          }
+          else if(count == 9){
+            pry[9][0] = gx1_raw;
+            pry[9][1] = gy1_raw;
+            pry[9][2] = gz1_raw;
+            delay(500);
+          }
+          else if(count == 10){
+            pry[10][0] = gx1_raw;
+            pry[10][1] = gy1_raw;
+            pry[10][2] = gz1_raw;
+            delay(500);
+          }
+          else if(count == 11){
+            pry[11][0] = gx1_raw;
+            pry[11][1] = gy1_raw;
+            pry[11][2] = gz1_raw;
+            delay(500);
+          }
+          else if(count == 12){
+            pry[12][0] = gx1_raw;
+            pry[12][1] = gy1_raw;
+            pry[12][2] = gz1_raw;
+            delay(500);
+          }
+          else if(count == 13){
+            pry[13][0] = gx1_raw;
+            pry[13][1] = gy1_raw;
+            pry[13][2] = gz1_raw;
+            delay(500);
+          }
+         
+          count ++;
+          }
+        }
+        else{
+          for(int i = 0; i < 14; i++){
+          if(count[i][0] == gx1_raw && count[i][1] == gy1_raw && count[i][2] == gz1_raw){
+             print(i);
+             println(" ");
+            }  
+            }
+      
+		  /*Serial.print(F("Angle x,y,z : "));
+		  Serial.print(gx1_raw, DEC);
+	    Serial.print(F(", "));
+		  Serial.print(gy1_raw, DEC);
+		  Serial.print(F(", "));
+		  Serial.print(gz1_raw, DEC);
+		  Serial.println(F(""));*/
+        }
 	}
 
 	prevSensoredTime = curSensoredTime;
