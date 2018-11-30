@@ -1,6 +1,6 @@
 #include <math.h> // (no semicolon)
 #include <Wire.h>
-
+#include <SoftwareSerial.h>
 /* MPU-6050 sensor */
 #define MPU6050_ACCEL_XOUT_H 0x3B // R
 #define MPU6050_PWR_MGMT_1 0x6B // R/W
@@ -14,6 +14,7 @@ int ledPin = 5;
 int buttonApin = 9;
 int index = 999;
 int pry[28][3]= {0, };
+int LUT[28] = {0, };
 int fsrPin = 0;
 int fsrReading;
 /* Kalman filter */
@@ -72,7 +73,9 @@ typedef union accel_t_gyro_union
 		int z_gyro;
 	} value;
 };
-
+int currentTooth = 999;
+int checksum = 999;
+SoftwareSerial BTSerial(2, 3);
 int xInit[5] = {0,0,0,0,0};
 int yInit[5] = {0,0,0,0,0};
 int zInit[5] = {0,0,0,0,0};
@@ -101,7 +104,7 @@ void setup()
 
 	Serial.begin(9600);
 	Wire.begin();
-
+ BTSerial.begin(9600);//블루투스와의 통신속도 설정
 	error = MPU6050_read (MPU6050_WHO_AM_I, &c, 1);
 	Serial.print(F("WHO_AM_I : "));
 	Serial.print(c,HEX);
@@ -114,6 +117,34 @@ void setup()
 	Serial.print(F(", error = "));
 	Serial.println(error,DEC);
   pinMode(buttonApin, INPUT_PULLUP);
+  LUT[0] = 37;
+  LUT[1] = 36;
+  LUT[2] = 35;
+  LUT[3] = 34;
+  LUT[4] = 33;
+  LUT[5] = 32;
+  LUT[6] = 31;
+  LUT[7] = 41;
+  LUT[8] = 42;
+  LUT[9] = 43;
+  LUT[10] = 44;
+  LUT[11] = 45;
+  LUT[12] = 46;
+  LUT[13] = 47;
+  LUT[14] = 27;
+  LUT[15] = 26;
+  LUT[16] = 25;
+  LUT[17] = 24;
+  LUT[18] = 23;
+  LUT[19] = 22;
+  LUT[20] = 21;
+  LUT[21] = 11;
+  LUT[22] = 12;
+  LUT[23] = 13;
+  LUT[24] = 14;
+  LUT[25] = 15;
+  LUT[26] = 16;
+  LUT[27] = 17;
 }
 
 
@@ -215,7 +246,7 @@ void loop()
         Serial.print(F("X\n"));
       }*/
       fsrReading = analogRead(fsrPin);
-if(fsrReading!= 0){
+if(fsrReading>= 10){
       if(count<28){
         if(digitalRead(buttonApin) == LOW){
           if(count ==0){
@@ -403,15 +434,11 @@ if(fsrReading!= 0){
           for(int i = 0; i < 14; i++){
           if(((pry[i][2] - gz1_raw)>=-1 &&(pry[i][2] - gz1_raw)<=1 ) && accel_t_gyro.value.x_accel>=0 ){
             index = i;
-          //  Serial.print(i);
-          //  Serial.println(" ");
             break;
           }  
           for(int i = 14; i < 28; i++){
           if(((pry[i][2] - gz1_raw)>=-1 &&(pry[i][2] - gz1_raw)<=1 ) && accel_t_gyro.value.x_accel<0 ){
             index = i;
-          //  Serial.print(i);
-          //  Serial.println(" ");
             break;
           }  
             }
@@ -421,6 +448,15 @@ if(fsrReading!= 0){
         }
 
 	}
+ 
+ if(fsrReading<=10){
+  index =999;
+ }
+ if(index!=999){
+   currentTooth = LUT[index];
+   checksum = currentTooth %7;
+   writeBT(currentTooth, checksum, 2);
+  }
       Serial.print(index);
       Serial.println(F(""));
       Serial.print(F("Angle x,y,z : "));
@@ -436,6 +472,27 @@ if(fsrReading!= 0){
 //	analogWrite( vibrator_pin , strength );
 }	// End of loop()
 prevSensoredTime = curSensoredTime;}
+
+void writeBT(int tooth, int checksum, int pressure) {
+  char whole[20] = "";
+  char str_tooth[20] = {'0'};
+  char str_checksum[20] = {'0'};
+  char str_pressure[20] = {'0'};
+  char sep[20] = "/";
+  char tokenizer[20] = "\r\n";
+  itoa(tooth, &str_tooth[0], 10);
+  strcat(whole, str_tooth);
+  strcat(whole, sep);
+  itoa(checksum, &str_tooth[0], 10);
+  strcat(whole, str_tooth); 
+  strcat(whole, sep);
+  itoa(pressure, &str_pressure[0], 10);
+  strcat(whole, str_pressure);
+  strcat(whole, tokenizer);
+  
+  BTSerial.write(whole);
+  Serial.println(whole);
+}
 
 /**************************************************
  * Sensor read/write
